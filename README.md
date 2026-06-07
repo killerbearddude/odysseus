@@ -487,3 +487,34 @@ ODYSSEUS_SETUP_TOKEN=replace-with-long-random-secret
 
 The setup token may be supplied as `?setup_token=...`, as the
 `X-Odysseus-Setup-Token` header, or as a `setup_token` POST field.
+
+
+<!-- PR6_DOCKER_SMOKE_START -->
+## Docker smoke test
+
+Odysseus includes a Docker Compose smoke test for release and CI validation. It
+builds the Compose stack, starts it under an isolated Compose project name, waits
+for `http://127.0.0.1:${APP_PORT:-7000}/api/health`, captures
+`docker-smoke.log` on failure, and always tears containers down.
+
+Run it locally with:
+
+```bash
+chmod +x scripts/docker-smoke.sh
+scripts/docker-smoke.sh
+```
+
+The smoke test uses safe local defaults:
+
+```text
+APP_BIND=127.0.0.1
+APP_PORT=7000
+AUTH_ENABLED=true
+LOCALHOST_BYPASS=false
+ODYSSEUS_DEPLOYMENT_MODE=local
+COMPOSE_PROJECT_NAME=odysseus_smoke
+```
+
+It is intentionally not a GPU, model-download, email, calendar, or external
+provider integration test.
+<!-- PR6_DOCKER_SMOKE_END -->

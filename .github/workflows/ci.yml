@@ -83,6 +83,12 @@ jobs:
             python -m pip install pytest pytest-asyncio fastapi starlette httpx
           fi
 
+      - name: Prepare test runtime directories
+        # The app defaults SQLite state under ./data. Fresh CI checkouts do not
+        # contain ignored runtime directories, so create them before imports that
+        # initialize the database during pytest collection.
+        run: mkdir -p data logs uploads generated backups
+
       - name: Run unit test marker set
         run: python -m pytest tests --ignore=tests/security
 
@@ -111,19 +117,28 @@ jobs:
             python -m pip install pytest pytest-asyncio fastapi starlette httpx
           fi
 
+      - name: Prepare test runtime directories
+        # Security tests import modules that may initialize SQLite-backed state.
+        # Keep this setup explicit so CI mirrors a first-run checkout without
+        # committing ignored runtime artifacts.
+        run: mkdir -p data logs uploads generated backups
+
       - name: Run security test marker set
-        run: if find tests/security -type f -name 'test_*.py' 2>/dev/null | grep -q .; then
-  python -m pytest tests/security
-else
-  python -m pytest \
-    tests/test_security_regressions.py \
-    tests/test_api_chat_security.py \
-    tests/test_url_safety.py \
-    tests/test_tool_path_confinement.py \
-    tests/test_reserved_username_admin_escalation.py \
-    tests/test_companion_pairing.py \
-    tests/test_internal_tool_auth.py
-fi
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find tests/security -type f -name 'test_*.py' 2>/dev/null | grep -q .; then
+            python -m pytest tests/security
+          else
+            python -m pytest \
+              tests/test_security_regressions.py \
+              tests/test_api_chat_security.py \
+              tests/test_url_safety.py \
+              tests/test_tool_path_confinement.py \
+              tests/test_reserved_username_admin_escalation.py \
+              tests/test_companion_pairing.py \
+              tests/test_internal_tool_auth.py
+          fi
 
   release-hygiene:
     name: Release hygiene
@@ -143,3 +158,59 @@ fi
           scripts/check-executable-bits.sh
           python scripts/generate-release-manifest.py
           scripts/distcheck.sh
+
+  docker-smoke:
+    name: Docker smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Docker smoke relevance
+        id: docker-smoke-changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")"
+          else
+            changed_files="$(git diff --name-only HEAD^ HEAD 2>/dev/null || git ls-files)"
+          fi
+
+          echo "Changed files:"
+          printf '%s\n' "${changed_files}"
+
+          if printf '%s\n' "${changed_files}" | grep -Eq '^(Dockerfile|docker-compose.*\.ya?ml|app\.py|core/|routes/|src/|services/|scripts/docker-smoke\.sh|requirements.*\.txt)'; then
+            echo "run=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "run=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Show Docker versions
+        if: steps.docker-smoke-changes.outputs.run == 'true'
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Run Docker smoke test
+        if: steps.docker-smoke-changes.outputs.run == 'true'
+        env:
+          COMPOSE_PROJECT_NAME: odysseus_smoke
+          APP_BIND: 127.0.0.1
+          APP_PORT: "7000"
+          AUTH_ENABLED: "true"
+          LOCALHOST_BYPASS: "false"
+          ODYSSEUS_DEPLOYMENT_MODE: local
+        run: |
+          chmod +x scripts/docker-smoke.sh
+          scripts/docker-smoke.sh
+
+      - name: Upload Docker smoke failure log
+        if: ${{ failure() && hashFiles('docker-smoke.log') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-log
+          path: docker-smoke.log
