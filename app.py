@@ -1,6 +1,7 @@
 # app.py — slim orchestrator
 import mimetypes
 import os
+from core.config import validate_startup_safety
 
 
 def register_static_mime_types() -> None:
@@ -34,6 +35,10 @@ from dotenv import load_dotenv
 # is silently ignored and the user is unexpectedly forced to log in (issue #142).
 # utf-8-sig reads plain UTF-8 (no BOM) identically, so this is safe everywhere.
 load_dotenv(encoding="utf-8-sig")
+
+# Fail before serving requests if deployment settings would expose
+# setup or disabled-auth flows outside the intended trust boundary.
+validate_startup_safety()
 
 import asyncio
 import logging

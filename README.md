@@ -449,3 +449,41 @@ MIT -- see [LICENSE](LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
                ~^~  all aboard!  ~^~
        ~^~^~~^~^~~^~^~~^~^~~^~^~~^~^~~^~^~~^~^~
 ```
+
+<!-- PR2_SETUP_STARTUP_SAFETY_DOCS -->
+## Deployment safety and first-run setup token
+
+Odysseus is an admin-console-like local AI workspace. Keep the default bind on
+loopback for single-user local installs:
+
+```env
+ODYSSEUS_DEPLOYMENT_MODE=local
+APP_BIND=127.0.0.1
+AUTH_ENABLED=true
+LOCALHOST_BYPASS=false
+```
+
+Supported deployment modes are:
+
+- `local` — loopback-only local development and single-user operation.
+- `private-lan` — reachable on a trusted LAN; authentication and setup token are required.
+- `private-proxy` — reachable through a private HTTPS proxy/VPN; requires `SECURE_COOKIES=true`.
+- `offline` — reserved for local-only/offline behavior; full offline enforcement is a separate roadmap item.
+- `development` — development mode; do not expose beyond loopback unless you understand the risk.
+
+Startup fails closed for unsafe combinations:
+
+- `AUTH_ENABLED=false` with `APP_BIND=0.0.0.0`.
+- `LOCALHOST_BYPASS=true` when `APP_BIND` is not `127.0.0.1`, `localhost`, or `::1`.
+- `ODYSSEUS_DEPLOYMENT_MODE=private-proxy` with `SECURE_COOKIES=false`.
+
+When no admin exists, first-admin setup remains tokenless only for strict
+loopback local setup. Private LAN, private proxy, and other non-loopback binds
+must set a strong setup token:
+
+```env
+ODYSSEUS_SETUP_TOKEN=replace-with-long-random-secret
+```
+
+The setup token may be supplied as `?setup_token=...`, as the
+`X-Odysseus-Setup-Token` header, or as a `setup_token` POST field.
