@@ -17,10 +17,11 @@ from fastapi.responses import StreamingResponse
 
 from src.auth_helpers import require_user
 from src.tool_implementations import do_manage_notes
+from core.scopes import ApiScope
 
 
-COOKBOOK_READ_SCOPES = {"cookbook:read", "cookbook:launch"}
-COOKBOOK_LAUNCH_SCOPES = {"cookbook:launch"}
+COOKBOOK_READ_SCOPES = {ApiScope.COOKBOOK_READ.value, ApiScope.COOKBOOK_LAUNCH.value}
+COOKBOOK_LAUNCH_SCOPES = {ApiScope.COOKBOOK_LAUNCH.value}
 TODO_READ_SCOPES = {"todos:read", "todos:write"}
 TODO_WRITE_SCOPES = {"todos:write"}
 EMAIL_READ_SCOPES = {"email:read", "email:draft", "email:send"}
