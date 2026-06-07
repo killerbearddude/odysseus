@@ -1,0 +1,39 @@
+# Example optional hardened Odysseus runner service.
+# The runner is intentionally isolated from documents, app secrets, Docker, and audit logs.
+
+[Unit]
+Description=Odysseus Controlled Runner Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=odysseus-runner
+Group=odysseus-runner
+WorkingDirectory=/srv/odysseus/workspaces
+ExecStart=/srv/odysseus/app/.venv/bin/python -m services.tool_runner
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+ReadWritePaths=/srv/odysseus/workspaces /srv/odysseus/staging
+ReadOnlyPaths=/srv/odysseus/app
+InaccessiblePaths=/srv/odysseus/documents /srv/odysseus/app/.env /srv/odysseus/app/.app_key /var/log/odysseus/audit.jsonl /root /home /etc /var/run/docker.sock
+RuntimeDirectory=odysseus
+RuntimeDirectoryMode=0750
+LogsDirectory=odysseus
+
+[Install]
+WantedBy=multi-user.target

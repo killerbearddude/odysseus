@@ -1,0 +1,35 @@
+# Example optional hardened Odysseus diagnostics collector service.
+# Diagnostics must stay read-only, redacted, and command-allowlisted.
+
+[Unit]
+Description=Odysseus Diagnostics Collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=odysseus-diagnostics
+Group=odysseus-diagnostics
+WorkingDirectory=/srv/odysseus/app
+ExecStart=/srv/odysseus/app/scripts/odysseus-support-bundle --output /srv/odysseus/diagnostics/support-bundle.zip
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+ReadOnlyPaths=/srv/odysseus /var/log/odysseus
+ReadWritePaths=/srv/odysseus/diagnostics
+InaccessiblePaths=/root /home /var/run/docker.sock
+LogsDirectory=odysseus
+
+[Install]
+WantedBy=multi-user.target

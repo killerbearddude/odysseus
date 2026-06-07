@@ -1,0 +1,39 @@
+# Example optional hardened Odysseus model-serving service.
+# GPU device access, if needed, must be granted explicitly by the operator.
+
+[Unit]
+Description=Odysseus Local Model Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=odysseus-model
+Group=odysseus-model
+WorkingDirectory=/srv/odysseus/models
+ExecStart=/srv/odysseus/app/.venv/bin/python -m services.model_serving_contract
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+ReadOnlyPaths=/srv/odysseus/app
+ReadWritePaths=/srv/odysseus/models /srv/odysseus/cache /var/log/odysseus /run/odysseus
+InaccessiblePaths=/srv/odysseus/documents /srv/odysseus/app/.env /srv/odysseus/app/.app_key /var/log/odysseus/audit.jsonl /root /home /var/run/docker.sock
+RuntimeDirectory=odysseus
+RuntimeDirectoryMode=0750
+LogsDirectory=odysseus
+
+[Install]
+WantedBy=multi-user.target
