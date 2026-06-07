@@ -1,0 +1,41 @@
+# Example optional hardened Odysseus web/API service.
+# Review and adapt before installing. This is not used by the default install.
+
+[Unit]
+Description=Odysseus Web/API Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=odysseus-web
+Group=odysseus-web
+WorkingDirectory=/srv/odysseus/app
+EnvironmentFile=-/srv/odysseus/app/.env
+ExecStart=/srv/odysseus/app/.venv/bin/python app.py
+Restart=on-failure
+RestartSec=5
+UMask=0027
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+ReadOnlyPaths=/srv/odysseus/app
+ReadWritePaths=/srv/odysseus/workspaces /srv/odysseus/staging /srv/odysseus/imports /srv/odysseus/index /srv/odysseus/diagnostics /var/log/odysseus /run/odysseus
+InaccessiblePaths=/root /home /var/run/docker.sock
+
+RuntimeDirectory=odysseus
+RuntimeDirectoryMode=0750
+LogsDirectory=odysseus
+
+[Install]
+WantedBy=multi-user.target
