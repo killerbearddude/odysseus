@@ -1,6 +1,7 @@
 """Authentication routes — login, logout, signup, status, user management."""
 
 from fastapi import APIRouter, Request, Response, HTTPException
+from core.config import is_valid_setup_token, setup_token_required
 from pydantic import BaseModel
 from typing import Optional
 import asyncio
@@ -73,6 +74,66 @@ class SetOpenRegistrationRequest(BaseModel):
 SESSION_COOKIE = "odysseus_session"
 
 
+# PR2_SETUP_TOKEN_ROUTE_GUARD
+async def _extract_setup_token_from_request(request: Request) -> str | None:
+    """
+    Extract a first-run setup token from supported request locations.
+
+    The setup token can be supplied by query string, header, JSON body, or form
+    field. Starlette caches parsed bodies, so reading form/JSON here preserves
+    the body for the existing setup handler in normal FastAPI request flow.
+    """
+    query_params = getattr(request, "query_params", {})
+    token = query_params.get("setup_token") if hasattr(query_params, "get") else None
+    if token:
+        return str(token)
+
+    headers = getattr(request, "headers", {})
+    token = headers.get("X-Odysseus-Setup-Token") if hasattr(headers, "get") else None
+    if token:
+        return str(token)
+
+    method = getattr(request, "method", "GET").upper()
+    if method not in {"POST", "PUT", "PATCH"}:
+        return None
+
+    content_type = headers.get("content-type", "") if hasattr(headers, "get") else ""
+    if "application/json" in content_type.lower() and hasattr(request, "json"):
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+        if isinstance(data, dict) and data.get("setup_token"):
+            return str(data["setup_token"])
+
+    if hasattr(request, "form"):
+        try:
+            form = await request.form()
+        except Exception:
+            form = {}
+        if hasattr(form, "get") and form.get("setup_token"):
+            return str(form.get("setup_token"))
+
+    return None
+
+
+async def require_setup_token_if_needed(request: Request) -> None:
+    """
+    Enforce setup-token protection for remotely reachable first-admin setup.
+
+    Tokenless first-admin setup remains allowed for strictly loopback local
+    development. Any private LAN, proxy, or non-loopback bind must provide a
+    valid ODYSSEUS_SETUP_TOKEN to prevent remote account claiming.
+    """
+    if not setup_token_required():
+        return
+
+    provided_token = await _extract_setup_token_from_request(request)
+    if is_valid_setup_token(provided_token):
+        return
+
+    raise HTTPException(status_code=403, detail="Setup token required")
+
 def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
     router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -86,6 +147,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
 
     @router.post("/setup")
     async def first_run_setup(body: SetupRequest, request: Request):
+        await require_setup_token_if_needed(request)
         """Create initial admin account. Only works if no accounts exist."""
         if not _setup_limiter.check(request.client.host):
             raise HTTPException(429, "Too many requests — try again later")
