@@ -1,56 +1,40 @@
-"""Shared test configuration — ensure project root is on sys.path and stub heavy deps."""
-import sys
-import os
-import types
-import importlib.util
-from unittest.mock import MagicMock
+"""
+Pytest collection policy for Odysseus CI marker jobs.
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+The repository has a large legacy test suite that predates explicit pytest
+markers. This file keeps CI marker jobs useful while tests are migrated:
+security-path tests are marked as security, and otherwise-unmarked tests are
+treated as unit tests by default.
+"""
 
-# Importing core.database below runs init_db() at import time, and its default
-# (sqlite:///./data/app.db) can't be opened in a clean worktree because SQLite
-# won't create the missing ./data parent dir — pytest then dies during
-# collection, before any test module loads. Default to an in-memory DB for the
-# test session so collection is deterministic and writes no repo-local
-# artifacts. An explicit DATABASE_URL (a real test/CI database) is preserved.
-# This only unblocks collection/import-time init; it does not provide a shared
-# file-backed DB across processes — tests needing that must set DATABASE_URL.
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+from __future__ import annotations
 
-# Pre-import real heavy modules BEFORE any test file's module-level stubs can
-# replace them with MagicMock. Some test files (e.g. test_llm_core_sanitize_*)
-# stub sqlalchemy/core.database at module scope with `if mod not in sys.modules`,
-# which fires during collection. If the real module hasn't been imported yet,
-# the stub wins and contaminates every subsequent test that needs the real ORM.
-try:
-    import sqlalchemy  # noqa: F401
-    import sqlalchemy.orm  # noqa: F401
-    import core.database  # noqa: F401
-except ImportError:
-    pass  # not installed — the stubs below will handle it
+from pathlib import Path
 
-def _has_module(mod_name: str) -> bool:
-    try:
-        return importlib.util.find_spec(mod_name) is not None
-    except (ImportError, ValueError):
-        return False
+import pytest
 
 
-# Stub optional dependencies only when they are not installed. Do not replace
-# real FastAPI/Starlette/Pydantic modules: route tests import their subpackages.
-for mod_name in [
-    "sqlalchemy", "sqlalchemy.orm", "sqlalchemy.types", "sqlalchemy.ext", "sqlalchemy.ext.declarative",
-    "sqlalchemy.ext.hybrid", "sqlalchemy.sql", "sqlalchemy.sql.expression",
-    "sqlalchemy.sql.sqltypes", "bcrypt", "pyotp",
-    "httpx", "fastapi", "fastapi.responses", "fastapi.routing",
-    "starlette", "starlette.responses", "starlette.middleware", "starlette.middleware.base",
-    "pydantic",
-]:
-    if mod_name not in sys.modules and not _has_module(mod_name):
-        sys.modules[mod_name] = MagicMock()
+# Markers controlled by this policy. Tests that already declare one of these
+# markers keep their explicit classification.
+_CI_MARKERS = {"unit", "security", "integration", "docker", "slow"}
 
-if "src.database" not in sys.modules:
-    _db = types.ModuleType("src.database")
-    _db.SessionLocal = MagicMock()
-    _db.ModelEndpoint = MagicMock()
-    sys.modules["src.database"] = _db
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """
+    Assign default CI markers during test collection.
+
+    Security tests live under ``tests/security`` and should always run in the
+    dedicated security CI job. Legacy tests without explicit CI markers are
+    marked as unit tests so ``pytest -m unit`` remains a meaningful blocking job
+    instead of selecting zero tests.
+    """
+    for item in items:
+        marker_names = {marker.name for marker in item.iter_markers()}
+        if marker_names & _CI_MARKERS:
+            continue
+
+        test_path = Path(str(item.fspath))
+        if "tests/security" in test_path.as_posix():
+            item.add_marker(pytest.mark.security)
+        else:
+            item.add_marker(pytest.mark.unit)
