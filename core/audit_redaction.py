@@ -210,10 +210,22 @@ def summarize_sensitive_text(
         raw_text = str(content)
         raw_bytes = raw_text.encode("utf-8", errors="replace")
 
+    secret_types = detect_secret_types(raw_text)
     redacted = redact_secret_like_values(raw_text)
     excerpt = redacted[: max(0, max_excerpt_chars)]
     if len(redacted) > len(excerpt):
         excerpt += "…"
+
+    # A secret may occur after the bounded excerpt window. Keep the excerpt
+    # bounded, but make redaction visible in persisted audit rows so reviewers
+    # and tests can distinguish "no secret was present" from "a secret was
+    # detected outside the excerpt."
+    if secret_types and "[REDACTED" not in excerpt:
+        marker = "[REDACTED:secret_present] "
+        available = max(0, max_excerpt_chars - len(marker))
+        excerpt = marker + excerpt[:available]
+        if len(redacted) > available:
+            excerpt += "…"
 
     return {
         "content_kind": content_kind,
@@ -221,7 +233,7 @@ def summarize_sensitive_text(
         "byte_count": len(raw_bytes),
         "line_count": raw_text.count("\n") + (1 if raw_text else 0),
         "redacted_excerpt": excerpt,
-        "secret_type_detected": detect_secret_types(raw_text),
+        "secret_type_detected": secret_types,
         "raw_content_logged": False,
     }
 
