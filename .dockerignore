@@ -40,3 +40,22 @@ timetree*.png
 *_signin_page.png
 *_calendar_view.png
 .gitignore
+# PR5_RELEASE_HYGIENE_IGNORES
+# Keep local secrets, mutable state, generated release metadata, and Python
+# caches out of Docker build contexts.
+.env
+.env.*
+!.env.example
+.app_key
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+generated/
+backups/
+__pycache__/
+*.pyc
+.pytest_cache/
+RELEASE_MANIFEST.json

@@ -124,3 +124,22 @@ else
     tests/test_companion_pairing.py \
     tests/test_internal_tool_auth.py
 fi
+
+  release-hygiene:
+    name: Release hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run release hygiene checks
+        run: |
+          chmod +x scripts/check-executable-bits.sh scripts/distcheck.sh
+          scripts/check-executable-bits.sh
+          python scripts/generate-release-manifest.py
+          scripts/distcheck.sh

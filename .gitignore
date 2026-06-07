@@ -89,3 +89,22 @@ docs/windows-port/
 compound.config.json
 *.error.log
 _scratch/
+# PR5_RELEASE_HYGIENE_IGNORES
+# Local secrets, mutable state, generated release metadata, and Python caches
+# must never be committed or included in source release candidates.
+.env
+.env.*
+!.env.example
+.app_key
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+generated/
+backups/
+__pycache__/
+*.pyc
+.pytest_cache/
+RELEASE_MANIFEST.json
