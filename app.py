@@ -263,6 +263,12 @@ if AUTH_ENABLED:
                 from core.middleware import INTERNAL_TOOL_HEADER, INTERNAL_TOOL_TOKEN as _ITT
                 _hdr = request.headers.get(INTERNAL_TOOL_HEADER)
                 if _hdr and secrets.compare_digest(_hdr, _ITT) and _is_trusted_loopback(request):
+                    # Only this middleware is allowed to mark an internal-tool request as
+                    # validated because it checks both the secret token and direct
+                    # loopback origin. Downstream admin helpers must not re-check raw
+                    # headers or they can drift from the canonical trust-boundary logic.
+                    request.state.internal_tool_validated = True
+
                     # Impersonation: when the agent's loopback call sets
                     # X-Odysseus-Owner, attribute the request to that user only
                     # if they exist. Authorization checks remain separate; this

@@ -4,9 +4,10 @@
 import os
 import secrets
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from core.security_dependencies import require_admin
 
 
 # Per-process token that lets the in-app tool layer hit admin-gated
@@ -15,36 +16,6 @@ from starlette.responses import Response
 # same value from this module. Never persisted or exposed externally.
 INTERNAL_TOOL_TOKEN = os.environ.get("ODYSSEUS_INTERNAL_TOKEN") or secrets.token_hex(32)
 INTERNAL_TOOL_HEADER = "X-Odysseus-Internal-Token"
-
-
-def require_admin(request: Request):
-    """Raise 403 if the current user isn't an admin.
-    Allows access when auth is explicitly disabled, or when the request carries
-    the in-process internal-tool token used by loopback agent tools.
-    """
-    # In-process bypass for tool-layer loopback calls. Two paths:
-    # (a) header-direct (caller set X-Odysseus-Internal-Token), or
-    # (b) the auth middleware already validated the token and stamped
-    #     request.state.current_user = "internal-tool".
-    try:
-        hdr = request.headers.get(INTERNAL_TOOL_HEADER)
-        if hdr and secrets.compare_digest(hdr, INTERNAL_TOOL_TOKEN):
-            return
-        if getattr(request.state, "current_user", None) == "internal-tool":
-            return
-    except Exception:
-        pass
-
-    auth_mgr = getattr(request.app.state, "auth_manager", None)
-    if os.getenv("AUTH_ENABLED", "true").lower() == "false":
-        return
-    if not auth_mgr or not auth_mgr.is_configured:
-        raise HTTPException(403, "Admin only")
-    user = getattr(request.state, "current_user", None)
-    if not user or not auth_mgr.is_admin(user):
-        raise HTTPException(403, "Admin only")
-
-
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add standard security headers to all responses."""
 
