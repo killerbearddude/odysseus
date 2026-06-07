@@ -732,6 +732,10 @@ app.include_router(setup_contacts_routes())
 from companion import setup_companion_routes
 app.include_router(setup_companion_routes())
 
+# PR17_ADMIN_DIAGNOSTICS_ROUTE
+from routes.admin_diagnostics_routes import setup_admin_diagnostics_routes
+app.include_router(setup_admin_diagnostics_routes())
+
 # ========= ROUTES (kept in app.py) =========
 
 def _serve_html_with_nonce(request: Request, file_path: str) -> HTMLResponse:
