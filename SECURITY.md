@@ -1,40 +1,103 @@
 # Security Policy
 
-Odysseus is a self-hosted AI workspace with privileged local capabilities. Please do not run it as a public, unauthenticated service.
+Odysseus is private-alpha software for trusted private deployments. It is a
+self-hosted AI workspace with privileged local capabilities, including tools
+that can read files, write files, run commands, send email, manage model
+serving, and operate local integrations when an operator enables them.
+
+Odysseus is **not intended for unauthenticated public internet exposure**. Treat
+it like an admin console. A network-accessible deployment requires strong
+authentication, TLS, a trusted reverse proxy or private access layer, careful
+backup discipline, and regular updates.
 
 ## Supported Versions
 
 Security fixes are handled on the default branch until formal releases are cut.
+Public alpha tags should only be created after the release checklist and known
+risks documents have been updated.
+
+## Security Model
+
+- The model is treated as untrusted. LLM output is not an authority boundary.
+- The browser/UI is not the authority boundary. Server-side policy gates must
+  decide whether a tool/action is allowed, denied, staged, or requires review.
+- High-risk tools are governed by the policy registry, path safety, staging and
+  review packets, confirmation tokens where implemented, audit logging,
+  sandbox-runner checks where implemented, and offline/local-only gates.
+- Generated scripts, shell commands, patches, email drafts, backup/restore
+  actions, and model-serving changes are drafts until reviewed by an operator.
+- External integrations may send request data to configured providers. Operators
+  are responsible for understanding provider terms, retention, billing, and
+  data-handling behavior.
 
 ## Deployment Guidance
 
 - Keep `AUTH_ENABLED=true` for any network-accessible deployment.
 - Keep `LOCALHOST_BYPASS=false` outside local development.
-- Set `SECURE_COOKIES=true` when Odysseus is served through HTTPS by a trusted reverse proxy or private access gateway.
+- Set `SECURE_COOKIES=true` when Odysseus is served through HTTPS by a trusted
+  reverse proxy or private access gateway.
 - Use HTTPS when exposing the app beyond localhost.
-- Put the authenticated Odysseus web/API entrypoint behind a trusted reverse proxy or private access layer such as Cloudflare Access, Tailscale, or a VPN.
-- Keep ChromaDB, SearXNG, ntfy, Ollama, vLLM, llama.cpp, databases, and raw model/provider APIs internal-only.
-- Protect `.env`, `data/`, `logs/`, uploads, generated media, backups, auth/session files, database files, API keys, and model/provider tokens.
-- Disable open signup unless you intentionally want new accounts.
-- Keep demo/test users non-admin, and remove them entirely on serious deployments.
-- Give admin accounts strong passwords and enable 2FA where possible.
-- Leave high-risk agent tools restricted to admins: shell, Python, file read/write, email send/read, MCP, app API, task/skill/memory management, settings, tokens, and model serving.
-- Rotate API keys, webhook secrets, and Odysseus API tokens if they appear in logs, screenshots, demos, or shared chats.
-- Treat shell, model-serving, MCP, email, calendar, and vault features as privileged admin functionality.
-- Common internal-only ports are Odysseus `7000`, SearXNG `8080`, ntfy `8091`, ChromaDB `8100`, Ollama `11434`, and local model/provider APIs such as `8000-8020`.
+- Put Odysseus behind a trusted reverse proxy or private access layer such as a
+  VPN, Tailscale, or Cloudflare Access.
+- Keep ChromaDB, SearXNG, ntfy, Ollama, vLLM, llama.cpp, databases, and raw
+  model/provider APIs internal-only.
+- Do not expose local model APIs or worker sockets directly to the internet.
+- Use `ODYSSEUS_OFFLINE_MODE=true` only as an implemented local-only control;
+  do not assume it blocks features that have not been wired to the helper yet.
 
-## Publishing A Fork
+## Secret and Data Protection
 
-Before pushing a public fork, run:
+Protect these paths and values:
 
-```bash
-git status --short
-git check-ignore -v .env data/auth.json data/app.db logs/compound.log odysseus.db
-git grep -n -I -E "(sk-[A-Za-z0-9_-]{20,}|xox[baprs]-|AIza[0-9A-Za-z_-]{20,}|Bearer [A-Za-z0-9._~+/-]{20,})" -- . ':!static/lib/**' ':!package-lock.json'
-```
+- `.env`
+- `.app_key`
+- `data/`
+- `logs/`
+- uploaded files
+- generated media
+- backups
+- auth/session files
+- SQLite databases
+- API keys and model/provider tokens
+- email/calendar credentials
+- SSH/GPG keys
+- browser cookies
+- private documents and prompts
 
-Only `.env.example`, docs, source, tests, and static assets should be committed. Never commit live `.env` values, `data/` contents, local databases, uploaded files, generated media, logs, backups, auth/session files, API keys, model/provider tokens, password hashes, or personal documents.
+Never commit live `.env` values, local databases, uploaded files, generated
+media, logs, backups, auth/session files, API keys, model/provider tokens,
+password hashes, or private documents.
+
+## Admin Tools
+
+Leave high-risk agent tools restricted to admins:
+
+- shell and Python execution
+- file read/write
+- email send/read/delete
+- calendar write actions
+- MCP tools
+- app API and internal admin routes
+- task, skill, memory, and settings management
+- token and webhook management
+- backup/restore
+- model download and model serving
+- diagnostics/support bundle export
+
+Powerful local admin tools remain dangerous. Trusted users can intentionally or
+accidentally damage local data.
+
+## Offline / Local-Only Mode
+
+Offline mode blocks implemented external-capable provider, search, download,
+and network paths that call the centralized helper/policy checks. It is a
+safety gate, not a firewall and not a proof that no process on the host can make
+network connections. Pair offline mode with OS/container/network controls when
+strict egress prevention is required.
 
 ## Reporting
 
-Please report vulnerabilities privately via GitHub security advisories if available, or by opening a minimal issue that does not disclose exploit details.
+Report vulnerabilities privately via GitHub security advisories if available, or
+open a minimal issue that does not disclose exploit details. Do not post working
+exploit chains, real credentials, private logs, or private documents in public
+issues.

@@ -279,3 +279,11 @@ Before considering this profile active:
 - internal sockets are not world-writable.
 - no service has `sudo`, `docker`, `disk`, or broad journal access.
 - default install and Docker Compose behavior are unchanged.
+
+<!-- ISSUE22_RELEASE_GOVERNANCE:START -->
+## Release-Governance Checkpoint Note
+
+The hardened Linux profile remains optional and advanced. It reduces blast
+radius but does not make Odysseus safe for unauthenticated public internet
+exposure. No default install behavior changes are implied by this profile.
+<!-- ISSUE22_RELEASE_GOVERNANCE:END -->

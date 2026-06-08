@@ -117,3 +117,13 @@ Unsupported unless explicitly experimental:
 - other SQLAlchemy backends
 
 Set `ODYSSEUS_EXPERIMENTAL_DATABASES=1` only for explicit experimental testing of non-SQLite backends. This does not make those backends production-supported.
+
+<!-- ISSUE22_RELEASE_GOVERNANCE:START -->
+## Release-Governance Checkpoint Note
+
+Backup/restore tests passed during the Issue 22 checkpoint. Backup archives
+remain sensitive and may include `.env`, `.app_key`, databases, uploaded files,
+generated media, audit data, staging artifacts, and model/index state depending
+on what exists locally. Operators should verify archives before restore and take
+a fresh pre-restore backup before overwriting live data.
+<!-- ISSUE22_RELEASE_GOVERNANCE:END -->
