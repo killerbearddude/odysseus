@@ -36423,3 +36423,122 @@ body.theme-frosted .modal {
    the input beside it (.confirm-btn won't stretch on its own). */
 .ask-user-other-send { flex-shrink: 0; white-space: nowrap; min-height: 39px; }
 .ask-user-other-send:disabled { opacity: 0.5; cursor: default; }
+
+
+/* PR21_FRONTEND_SAFETY_UX_START */
+/* Safety UX primitives for tool decisions, staged review packets, and diagnostics. */
+.ods-sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.ods-risk-panel,
+.ods-diagnostics-panel {
+  border: 1px solid currentColor;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.ods-tool-decision-header,
+.ods-review-header,
+.ods-badge-row,
+.ods-review-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.ods-badge-row {
+  margin: 0.5rem 0;
+}
+
+.ods-risk-badge,
+.ods-decision-badge,
+.ods-review-state,
+.ods-approved-state {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  display: inline-block;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+}
+
+.ods-risk-low::before {
+  content: "Risk: ";
+}
+
+.ods-risk-medium::before {
+  content: "Risk: ";
+}
+
+.ods-risk-high::before {
+  content: "Risk: ";
+}
+
+.ods-risk-critical::before {
+  content: "Risk: ";
+}
+
+.ods-tool-decision-grid {
+  display: grid;
+  gap: 0.5rem 1rem;
+  grid-template-columns: minmax(11rem, max-content) 1fr;
+}
+
+.ods-tool-decision-grid dt {
+  font-weight: 700;
+}
+
+.ods-tool-decision-grid dd {
+  margin: 0;
+}
+
+.ods-safety-note,
+.ods-muted {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.ods-review-packet pre {
+  max-width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.ods-review-actions button {
+  min-height: 2.5rem;
+}
+
+.ods-review-approve[disabled],
+.ods-review-approve[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ods-risk-panel:focus,
+.ods-review-actions button:focus-visible,
+.ods-copy-instructions:focus-visible,
+.ods-review-approve:focus-visible,
+.ods-review-reject:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ods-risk-panel,
+  .ods-diagnostics-panel,
+  .ods-review-actions button {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
+/* PR21_FRONTEND_SAFETY_UX_END */
