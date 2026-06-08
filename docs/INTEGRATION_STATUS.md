@@ -45,3 +45,14 @@ Status labels:
   exit code, bounded stdout/stderr excerpts, log path, likely cause, and a next
   action are useful; raw provider keys, tokens, `.env`, `.app_key`, private
   prompts, or private documents are not.
+
+<!-- ISSUE22_RELEASE_GOVERNANCE:START -->
+## Release-Governance Checkpoint Note
+
+The Issue 22 checkpoint did not add new integrations. Existing integration
+statuses remain conservative. Provider probing and Cookbook/model-serving
+reliability helpers are present, but broad hardware/provider validation is still
+partial. External providers remain blocked by implemented offline-mode gates
+when `ODYSSEUS_OFFLINE_MODE=true`; local endpoints are allowed only when URL
+policy permits them.
+<!-- ISSUE22_RELEASE_GOVERNANCE:END -->

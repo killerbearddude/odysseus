@@ -78,3 +78,32 @@ the codebase, you are probably right to stay away.
 ## Not The Focus Right Now
 
 I prob shouldnt add more themes.
+
+<!-- ISSUE22_RELEASE_GOVERNANCE:START -->
+## Release-Governance Checkpoint Status
+
+The hardening baseline through PR #20 is complete on `dev` at `5ca6494`:
+
+- internal tool admin authorization
+- setup token and startup safety checks
+- API token scope registry
+- blocking CI tests
+- release hygiene checks
+- Docker smoke workflow
+- central tool policy registry
+- canonical path safety helper
+- redacted tool audit logging
+- staging/review packets
+- prompt-injection negative security corpus
+- sandbox runner abstraction
+- offline/local-only enforcement tests
+- redacted diagnostics/support bundle
+- backup/restore and migration discipline
+- Cookbook/model-serving reliability checks
+- hardened Linux deployment profile
+- frontend safety UX helpers
+
+Before a public alpha tag, rerun `distcheck` from a clean worktree, rerun Docker
+smoke on a Docker-ready host, install/run `pip-audit`, and update release notes
+with any dependency exceptions.
+<!-- ISSUE22_RELEASE_GOVERNANCE:END -->
